@@ -6,19 +6,21 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
 
 var queue chan string
 var regs map[int64]bool
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	regs := make(map[int64]bool,0)
+	regs := make(map[int64]bool, 0)
 	queue = make(chan string, 0)
 
 	token := os.Getenv("TELEGRAM_APITOKEN")
@@ -72,15 +74,15 @@ func main() {
 				}
 			}
 
-
 		}
 	}(updates)
 
 	go func() {
 		for {
-			message := <- queue
+			message := <-queue
 			for chat, _ := range regs {
-				msg := tgbotapi.NewMessage(chat, message)
+				unascaped, _ := url.QueryUnescape(message)
+				msg := tgbotapi.NewMessage(chat, unascaped)
 				// Okay, we're sending our message off! We don't care about the message
 				// we just sent, so we'll discard it.
 				if _, err := bot.Send(msg); err != nil {
@@ -90,10 +92,9 @@ func main() {
 					panic(err)
 				}
 			}
-			log.Printf("%v",message)
+			log.Printf("%v", message)
 		}
 	}()
-
 
 	http.HandleFunc("/", handler) // each request calls handler
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
@@ -106,7 +107,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 
-	msg := strings.Replace(string(b),"text=","",1)
+	msg := strings.Replace(string(b), "text=", "", 1)
 
 	queue <- msg
 
