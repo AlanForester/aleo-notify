@@ -72,6 +72,9 @@ func main() {
 					totalHr := float64(0)
 
 					for _, m := range miners {
+						if !m.Active {
+							continue
+						}
 						totalHr += m.HashRate
 						row := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("⛏ %s - %0.2f h/s", m.Ip, m.HashRate), m.Ip))
 						minersKb = append(minersKb, row)
